@@ -2,6 +2,8 @@ module TicTacToe
 
 import Data.Fin
 import Games
+import Syntax.WithProof
+import Data.List
 
 R : Type
 R = Fin 3
@@ -84,3 +86,54 @@ outcome  (p, a) (S k) ms with (wins (opponent p) a)
  outcome (p, a) (S k) ms | True = value (opponent p)
  outcome (p, a) (S k) (m :: ms) | False =
    outcome (play (p, a) m) k ms
+
+positions : List Grid
+positions = [(a,b) | a <- [0,1,2], b <- [0,1,2]]
+
+argmin,argmax : (p : Player) -> (a : Matrix) -> (Move (p,a)) ->
+  J {R} (Move (p,a))
+argmin p a move val =
+  foldl (\cur, pos => case @@(a pos) of
+      (Nothing ** prf) =>
+        if val (pos ** prf) < val cur
+        then (pos ** prf)
+        else cur
+      (Just x ** prf) => cur)
+    move positions
+
+argmax p a move val =
+  foldl (\cur, pos => case @@(a pos) of
+      (Nothing ** prf) =>
+        if val (pos ** prf) > val cur
+        then (pos ** prf)
+        else cur
+      (Just x ** prf) => cur)
+    move positions
+
+selection : (p : Player) -> (a : Matrix) -> Move (p, a) -> J {R} (Move (p,a))
+selection X a move = argmin X a move
+selection O a move = argmax O a move
+
+quantifier : (p : Player) -> (a : Matrix) ->
+  Maybe (Move (p, a)) -> K {R} (Move (p, a))
+quantifier p a (Just move) = overline (selection p a move)
+quantifier p a (Nothing) = const Draw
+
+AnyMove : (p : Player) -> (a : Matrix) -> Maybe (Move (p, a))
+AnyMove p a =
+  let u = find (\pos => isNothing (a pos)) positions
+  in ?AnyMove_rhs
+
+quantifiers : (b : Board) -> (k : Nat) -> 𝓚 {r = R} (TTT b k)
+quantifiers b 0 = []
+quantifiers  (p,a) (S k) with (wins (opponent p) a)
+ quantifiers (p,a) (S k) | True = []
+ quantifiers (p,a) (S k) | False =
+   quantifier p a (AnyMove p a) :: (\move => quantifiers (play (p,a) move) k)
+
+ticTacToe : Game {R}
+ticTacToe = MkGame (TTT board0 9)
+              (outcome board0 9) (quantifiers board0 9)
+
+r : R
+r = optimalOutcome ticTacToe
