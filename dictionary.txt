@@ -1,0 +1,5 @@
+Agda : Idris
+
+𝕋 : Tree
+path-head : head
+path-tail : tail

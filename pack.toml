@@ -1,0 +1,10 @@
+[custom.all.games]
+type = "local"
+path = "."
+ipkg = "games.ipkg"
+test = "test/test.ipkg"
+
+[custom.all.games-test]
+type = "local"
+path = "test"
+ipkg = "test.ipkg"
