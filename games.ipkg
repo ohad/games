@@ -19,6 +19,7 @@ authors = "Ohad Kammar"
 modules
   = Games
   , Games.TypeTrees
+  , TicTacToe
 
 -- main file (i.e. file to load at REPL)
 -- main =
