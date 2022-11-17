@@ -22,10 +22,10 @@ modules
   , TicTacToe
 
 -- main file (i.e. file to load at REPL)
--- main =
+main = TicTacToe
 
 -- name of executable
--- executable =
+executable = tictactoe
 -- opts =
 sourcedir = "src"
 -- builddir =

@@ -92,23 +92,30 @@ positions = [(a,b) | a <- [0,1,2], b <- [0,1,2]]
 
 argmin,argmax : (p : Player) -> (a : Matrix) -> (Move (p,a)) ->
   J {R} (Move (p,a))
-argmin p a move val =
-  foldl (\cur, pos => case @@(a pos) of
-      (Nothing ** prf) =>
-        if val (pos ** prf) < val cur
-        then (pos ** prf)
-        else cur
-      (Just x ** prf) => cur)
-    move positions
-
-argmax p a move val =
-  foldl (\cur, pos => case @@(a pos) of
-      (Nothing ** prf) =>
-        if val (pos ** prf) > val cur
-        then (pos ** prf)
-        else cur
-      (Just x ** prf) => cur)
-    move positions
+argmin p a move val = case val move of
+    FZ => move
+    _ => argmin_aux move positions
+  where
+    argmin_aux : (Move (p,a)) -> List Grid -> Move (p,a)
+    argmin_aux x [] = x
+    argmin_aux x (pos :: poss) = case @@(a pos) of
+      (Just _ ** _) => argmin_aux x poss
+      (Nothing ** prf) => case val (pos ** prf) of
+        FZ => (pos ** prf)
+        v => if val x < v then argmin_aux x poss
+                          else argmin_aux (pos ** prf) poss
+argmax p a move val = case val move of
+    2 => move
+    _ => argmax_aux move positions
+  where
+    argmax_aux : (Move (p,a)) -> List Grid -> Move (p,a)
+    argmax_aux x [] = x
+    argmax_aux x (pos :: poss) = case @@(a pos) of
+      (Just _ ** _) => argmax_aux x poss
+      (Nothing ** prf) => case val (pos ** prf) of
+        2 => (pos ** prf)
+        v => if val x > v then argmax_aux x poss
+                          else argmax_aux (pos ** prf) poss
 
 selection : (p : Player) -> (a : Matrix) -> Move (p, a) -> J {R} (Move (p,a))
 selection X a move = argmin X a move
@@ -121,8 +128,11 @@ quantifier p a (Nothing) = const Draw
 
 AnyMove : (p : Player) -> (a : Matrix) -> Maybe (Move (p, a))
 AnyMove p a =
-  let u = find (\pos => isNothing (a pos)) positions
-  in ?AnyMove_rhs
+  let Just pos = find (\pos => isNothing (a pos)) positions
+      | Nothing => Nothing
+  in case @@(a pos) of -- Unnecessary, but will do for now
+    (Nothing ** prf) => Just (pos ** prf)
+    ((Just x) ** prf) => Nothing
 
 quantifiers : (b : Board) -> (k : Nat) -> 𝓚 {r = R} (TTT b k)
 quantifiers b 0 = []
@@ -137,3 +147,9 @@ ticTacToe = MkGame (TTT board0 9)
 
 r : R
 r = optimalOutcome ticTacToe
+
+export
+main : IO ()
+main = do
+  putStrLn "Starting computation"
+  putStrLn $ show r
