@@ -6,30 +6,23 @@ namespace Tree
     Nil : Tree
     (::) : (X : Type) -> (Xf : X -> Tree) -> Tree
 
-public export
-Path : Tree -> Type
-Path [] = ()
-Path (x :: xf) = DPair x (Path . xf)
-
 namespace Path
+  -- Take advantage of Type : Type
   public export
-  Nil : Path []
-  Nil = ()
-
-  public export
-  (::) : (u : x) -> Path (xf u) -> Path (x :: xf)
-  (::) = MkDPair
+  data Path : Tree -> Type where
+    Nil : Path []
+    (::) : (u : x) -> Path (xf u) -> Path (x :: xf)
 
 public export
 head : Path (x :: xf) -> x
-head = (.fst)
+head (u :: us) = u
 
 -- Bug https://github.com/idris-lang/Idris2/issues/2777
 public export
-tail : (p : Path (x :: xf)) -> Path (xf p.fst)
-tail = (.snd)
+tail : (p : Path (x :: xf)) -> Path (xf (head p))
+tail (u :: us) = us
 
 public export
-length : {tree : Tree} -> Path tree -> Nat
-length {tree =   []   } p = 0
-length {tree = x :: xf} (u ** us) = S (TypeTrees.length us)
+length : Path tree -> Nat
+length [] = 0
+length (u :: us) = S (TypeTrees.length us)

@@ -3,3 +3,9 @@ Agda : Idris
 𝕋 : Tree
 path-head : head
 path-tail : tail
+
+K-sequence : Ksequence
+game : MkGame
+optimal-outcome : optimalOutcome
+
+J-sequence : Jsequence
