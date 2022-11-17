@@ -9,3 +9,5 @@ game : MkGame
 optimal-outcome : optimalOutcome
 
 J-sequence : Jsequence
+
+selection-strategy : selectionStrategy

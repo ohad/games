@@ -8,10 +8,12 @@ namespace Continuation
     K : Type -> Type
     K x = (x -> R) -> R
 
-    public export
-    data 𝓚 : Tree -> Type where
-      Nil : 𝓚 []
-      (::) : K x -> ((u : x) -> 𝓚 (xf u)) -> 𝓚 (x :: xf)
+namespace Continuation
+  public export
+  data 𝓚 : {r : Type} -> Tree -> Type where
+    Nil : 𝓚 []
+    (::) : K {R = r} x -> ((u : x) -> 𝓚 {r} (xf u)) ->
+      𝓚 {r} (x :: xf)
 parameters {0 R : Type}
   public export
   sub : (DPair x y -> R) -> (u : x) -> y u -> R
@@ -24,7 +26,7 @@ parameters {0 R : Type}
   (phi .*. gamma) q = phi (\u => gamma u (sub q u))
 
   public export
-  Ksequence : 𝓚 {R} xt -> K {R} (Path xt)
+  Ksequence : 𝓚 {r = R} xt -> K {R} (Path xt)
   Ksequence [] = \q => q []
   Ksequence (phi :: phif) =
     -- TODO: Clean this up
@@ -38,7 +40,7 @@ parameters {0 R : Type}
     constructor MkGame
     Xt : Tree
     q : Path Xt -> R
-    phit : 𝓚 {R} Xt
+    phit : 𝓚 {r = R} Xt
 
   optimalOutcome : Game -> R
   optimalOutcome game = Ksequence game.phit game.q
@@ -77,8 +79,33 @@ namespace Selection
           a = epsilon (\u => q (u ** b u ))
       in (a ** b a)
 
-    Jsequence : 𝓙 {R} xt -> J (Path xt)
+    Jsequence : 𝓙 {R} xt -> J {R} (Path xt)
     Jsequence [] = \q => []
     Jsequence (epsilon :: epsilonf) = \q =>
+      -- TODO: clean up
       let w = epsilon .*. (\u => Jsequence $ epsilonf u)
-      in ?h1
+          (r ** rs) = w (\(s ** ss) => q (s :: ss))
+      in (r :: rs)
+
+    -- Skip monadic code
+
+    selectionStrategy : 𝓙 {R} xt -> (Path xt -> R) -> Strategy xt
+    selectionStrategy [] q = []
+    selectionStrategy {xt = x :: xf}
+      epsilont@(epsilon :: epsilonf) q =
+      u0 :: sigmaf
+      where
+        u0 : x
+        u0 = head (Jsequence epsilont q)
+
+        sigmaf : (u : x) -> Strategy (xf u)
+        sigmaf u = selectionStrategy (epsilonf u)
+                     (q . (u ::))
+
+    overline : J {R} x -> K {R} x
+    overline epsilon = \p => p (epsilon p)
+
+    Overline : 𝓙 {R} xt -> 𝓚 {r = R} xt
+    Overline [] = []
+    Overline (epsilon :: epsilonf) = overline epsilon ::
+      (\u => Overline (epsilonf u))
