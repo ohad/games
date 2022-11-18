@@ -9,34 +9,42 @@ import Data.Vect
 
 import Syntax.PreorderReasoning
 
+public export
 R : Type
 R = Fin 3
 
+public export
 XWin, OWin, Draw : R
 XWin = 0
 Draw = 1
 OWin = 2
 
+public export
 data Player = X | O
 
+public export
 Eq Player where
   X == X = True
   X == O = False
   O == X = False
   O == O = True
 
+public export
 opponent : Player -> Player
 opponent X = O
 opponent O = X
 
+public export
 value : Player -> R
 value X = XWin
 value O = OWin
 
 
+public export
 Grid : Type
 Grid = (Fin 3, Fin 3)
 
+public export
 predMod3, succMod3 : Fin 3 -> Fin 3
 predMod3 FZ = 2
 predMod3 (FS x) = weaken x
@@ -48,6 +56,7 @@ succMod3 0 = 1
 succMod3 1 = 2
 succMod3 2 = 0
 
+public export
 rowOf, colOf : Grid -> List Grid
 colOf (row, col) = [-- exclude: (row,                     col)
                     (row,            predMod3 col)
@@ -71,24 +80,30 @@ diagsOf (row, col) =
         ,(predMod3 $ predMod3 row, succMod3 $ succMod3 col)]]
   else []
 
+public export
 positions : Vect 9 Grid
 positions = fromList [(a,b) | a <- [0,1,2], b <- [0,1,2]]
 
+public export
 Matrix : Type
 Matrix = Vect 3 $ Vect 3 $ Maybe Player
 
 infix 7 !!
+public export
 (!!) : Matrix -> Grid -> Maybe Player
 matrix !! (row, col) = index col $ index row matrix
 
+public export
 record State (movesLeft : Nat) where
   constructor MkState
   grid : Matrix
   free : Vect movesLeft Grid --(Subset Grid $ \pos => grid !! pos === Nothing)
 
+public export
 Board : (movesLeft : Nat) -> Type
 Board movesLeft = (Player , State movesLeft)
 
+public export
 EmptyMatrix : Matrix
 EmptyMatrix = replicate _ $ replicate _ Nothing
 
@@ -109,6 +124,7 @@ allEmpty (2, 0) = Refl
 allEmpty (2, 1) = Refl
 allEmpty (2, 2) = Refl
 
+public export
 board0 : Board 9
 board0 = ( X
          , MkState EmptyMatrix
@@ -214,26 +230,52 @@ AnyMove p a = case a.free of
   [] => Nothing
   (x :: xs) => Just 0
 
-quantifiers : {k : Nat} -> (b : Board k) -> 𝓚 {r = R} (TTT b)
-quantifiers {k = 0} b = []
-quantifiers {k = S k} (p, state) =
-  quantifier p state (AnyMove p state) :: \m =>
+selections : {k : Nat} -> (b : Board k) -> 𝓙 {R} (TTT b)
+selections {k = 0  } b = []
+selections {k = S k} (p, state) =
+  selection p state FZ :: \m =>
     case @@(winningMoveFor p state.grid (index m state.free)) of
         (True  ** prf) => rewrite prf in []
         (False ** prf) => rewrite prf in
-          quantifiers _
+          selections _
 
-ticTacToe : Game {R}
-ticTacToe = MkGame
+quantifiers : {k : Nat} -> (b : Board k) -> 𝓚 {r = R} (TTT b)
+quantifiers b = Overline (selections b)
+
+TicTacToe : Game {R}
+TicTacToe = MkGame
               (TTT board0)
               (outcome board0)
               (quantifiers board0)
 
 r : R
-r = optimalOutcome ticTacToe
+r = optimalOutcome TicTacToe
+
+s2 : Path (TTT Optimised.board0)
+s2 = strategicPath
+  (selectionStrategy (selections board0)
+                     (TicTacToe .q))
+
+printPath : {n : Nat} -> {b : Board n} ->
+  Path (TTT {n} b) -> String
+printPath {n = 0  } {b = (p,state)} x = "!"
+printPath {n = S n} {b = (p,state)} (u :: us)=
+  "\{show $ index u state.free}"
+  ++
+  case @@(winningMoveFor p state.grid (index u state.free)) of
+   (True ** prf) => "!"
+   (False ** prf) => (printPath {b = play (p,state) u} $
+     believe_me us) {-
+     replace
+       { x = (winningMoveFor p state.grid (index u state.free))
+       , y = False
+       , p = \v =>
+       Path (if v then [] else TTT (play (p,state) u))}
+         (?prff) us)-}
 
 export
 main : IO ()
 main = do
   putStrLn "Starting computation"
+  putStrLn $ printPath {b = board0} s2
   putStrLn $ show r

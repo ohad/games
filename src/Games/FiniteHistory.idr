@@ -115,3 +115,8 @@ namespace Selection
     Overline [] = []
     Overline (epsilon :: epsilonf) = overline epsilon ::
       (\u => Overline (epsilonf u))
+
+public export
+strategicPath : Strategy xt -> Path xt
+strategicPath [] = []
+strategicPath (x :: f) = x :: strategicPath (f x)
