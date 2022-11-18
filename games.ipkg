@@ -22,7 +22,7 @@ modules
   , TicTacToe
 
 -- main file (i.e. file to load at REPL)
-main = TicTacToe
+main = TicTacToe.Optimised
 
 -- name of executable
 executable = tictactoe
