@@ -20,9 +20,12 @@ modules
   = Games
   , Games.TypeTrees
   , TicTacToe
+  , TicTacToe.Optimised
+  , TicTacToe.Render
+  , TicTacToe.Keyboard
 
 -- main file (i.e. file to load at REPL)
-main = TicTacToe.Optimised
+main = TicTacToe.Render
 
 -- name of executable
 executable = tictactoe
