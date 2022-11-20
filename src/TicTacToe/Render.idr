@@ -5,6 +5,7 @@ import TicTacToe.Keyboard
 import Data.Vect
 import Data.String
 import System
+import System.File
 import Syntax.WithProof
 import Games
 
@@ -118,6 +119,7 @@ playAI {isAI = False} b = do
 playAI {isAI = True} b@(p,state) = do
   _ <- system "clear"
   putStrLn $ unlines $ display b
+  fflush stdout
   let (S k) = n
   | Z => putStrLn "Draw!"
   let move :: _ = spath (p,state)
