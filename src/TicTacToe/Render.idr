@@ -77,33 +77,54 @@ prompt b = do
                   prompt b
   pure move
 
+
+hack : {n : Nat} -> (b : Board (S n)) -> Move b ->
+  (continuation : {n : Nat} -> (b' : Board n) -> IO ()) -> IO ()
+hack b@(p,state) move continuation
+  with (play b move)
+     | (winningMoveFor p state.grid (index move state.free))
+ hack b@(p,state) move continuation | b' | False = continuation b'
+ hack b@(p,state) move continuation | b' | True = do
+   _ <- system "clear"
+   putStrLn $ unlines $ display b'
+   putStrLn "\{show p} wins."
+
+
 partial
 playBothSides : {n : Nat} -> (b : Board n) -> IO ()
-hack : {n : Nat} -> (b : Board (S n)) -> Move b -> IO ()
 playBothSides b = do
   _ <- system "clear"
   putStrLn $ unlines $ display b
   let (S k) = n
   | Z => putStrLn "Draw!"
   move <- prompt b
-  hack b move
-
-hack b@(p,state) move
-  with (play b move)
-     | (winningMoveFor p state.grid (index move state.free))
- hack b@(p,state) move | b' | False = playBothSides b'
- hack b@(p,state) move | b' | True = do
-   _ <- system "clear"
-   putStrLn $ unlines $ display b'
-   putStrLn "\{show p} wins."
-
-r : R
-r = optimalOutcome TicTacToe
+  hack b move playBothSides
 
 spath : {n : Nat} -> (b : Board n) -> Path (TTT b)
 spath b = strategicPath
   (selectionStrategy (selections b)
                      (outcome b))
+
+partial
+playAI : {default False isAI : Bool} ->
+  {n : Nat} -> (b : Board n) -> IO ()
+playAI {isAI = False} b = do
+  _ <- system "clear"
+  putStrLn $ unlines $ display b
+  let (S k) = n
+  | Z => putStrLn "Draw!"
+  move <- prompt b
+  hack b move (playAI {isAI = True})
+playAI {isAI = True} b@(p,state) = do
+  _ <- system "clear"
+  putStrLn $ unlines $ display b
+  let (S k) = n
+  | Z => putStrLn "Draw!"
+  let move :: _ = spath (p,state)
+  hack b move (playAI {isAI = False})
+
+r : R
+r = optimalOutcome TicTacToe
 
 ProblematicMatrix : Matrix
 ProblematicMatrix =
@@ -129,5 +150,5 @@ main = do
   --putStrLn "Starting computation"
   --putStrLn $ printPath {b = board0}
   --                     (spath board0)
-  playBothSides board0
+  playAI board0
   pure ()
